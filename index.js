@@ -20,25 +20,98 @@ mongoose
   .catch((error) => {
     console.log(error);
   });
-app.post("/submit", (req, res) => {
-  console.log(req.body);
-  res.send("DONE");
-});
-app.listen(port, () => {
-  console.log(`Server is Running on port ${port}`);
-});
 
 const studentDataSchema = new mongoose.Schema({
   students: [
     {
       name: {
-        type: string,
+        type: String,
         required: true,
       },
       email: {
-        type: string,
+        type: String,
         required: true,
+      },
+      phoneNo: {
+        type: Number,
+        required: true,
+      },
+      gender: {
+        type: String,
+        required: true,
+      },
+      dob: {
+        type: Date,
+        required: true,
+      },
+      parentName: {
+        type: String,
+        required: true,
+      },
+      parentNo: {
+        type: Number,
+        required: true,
+      },
+      localAddress: {
+        type: String,
+        required: true,
+      },
+      permanentAddress: {
+        type: String,
+        required: true,
+      },
+      eduDesignation: {
+        type: String,
+        required: true,
+      },
+      qualification: {
+        type: String,
+        required: true,
+      },
+      year: {
+        type: String,
+        required: true,
+      },
+      college: {
+        type: String,
+        required: true,
+      },
+      coursedetail: {
+        type: String,
+        required: true,
+      },
+      otherCourse: {
+        type: String,
+      },
+      eduDesignation: {
+        type: String,
+        required: true,
+      },
+      analytics: {
+        type: String,
+        required: true,
+      },
+      friendName: {
+        type: String,
       },
     },
   ],
+});
+
+const StudentsData = mongoose.model("StudentsData", studentDataSchema);
+
+app.post("/submit", async (req, res) => {
+  const studentData = new StudentsData({
+    students: req.body.students,
+  });
+  try {
+    await studentData.save();
+
+    res.send(studentData);
+  } catch (error) {
+    console.log(error);
+  }
+});
+app.listen(port, () => {
+  console.log(`Server is Running on port ${port}`);
 });
