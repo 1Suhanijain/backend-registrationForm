@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -16,6 +17,9 @@ mongoose
   .connect("mongodb://127.0.0.1:27017/fsl")
   .then(() => {
     console.log("connected to mongodb");
+    app.listen(port, () => {
+      console.log(`Server is Running on port ${port}`);
+    });
   })
   .catch((error) => {
     console.log(error);
@@ -98,12 +102,19 @@ const studentDataSchema = new mongoose.Schema({
   ],
 });
 
-const StudentsData = mongoose.model("StudentsData", studentDataSchema);
+const StudentsData = mongoose.model(
+  "StudentsData",
+  studentDataSchema,
+  "students"
+);
+
+// console.log(StudentsData);
 
 app.post("/submit", async (req, res) => {
   const studentData = new StudentsData({
-    students: req.body.students,
+    students: req.body,
   });
+  console.log(studentData);
   try {
     await studentData.save();
 
@@ -112,21 +123,14 @@ app.post("/submit", async (req, res) => {
     console.log(error);
   }
 });
-/////
-// app.get("/studentsData", async (req, res) => {
-//   const studentData = new StudentsData({
-//     students: req.body.students,
-//   });
-//   try {
-//     await studentData.save();
-
-//     res.send(studentData);
-//   } catch (error) {
-//     console.log(error);
-//   }
-// });
-/////
-
-app.listen(port, () => {
-  console.log(`Server is Running on port ${port}`);
+///
+app.get("/studentsData", async (req, res) => {
+  try {
+    const students = await StudentsData.find();
+    res.send(students);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error retrieving student data");
+  }
 });
+///
