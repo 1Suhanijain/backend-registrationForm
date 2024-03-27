@@ -112,6 +112,21 @@ app.post("/submit", async (req, res) => {
     console.log(error);
   }
 });
+/////
+// app.get("/studentsData", async (req, res) => {
+//   const studentData = new StudentsData({
+//     students: req.body.students,
+//   });
+//   try {
+//     await studentData.save();
+
+//     res.send(studentData);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
+/////
+
 app.listen(port, () => {
   console.log(`Server is Running on port ${port}`);
 });
