@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import multer from "multer";
 
 const app = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -24,6 +25,17 @@ mongoose
   .catch((error) => {
     console.log(error);
   });
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 const studentDataSchema = new mongoose.Schema({
   students: [
@@ -133,4 +145,10 @@ app.get("/studentsData", async (req, res) => {
     res.status(500).send("Error retrieving student data");
   }
 });
+app.post("/upload", upload.single("files"), function (req, res) {
+  console.log(req.body);
+  // console.log(req.file);
+  res.json("Files uploaded successfully!");
+});
+
 ///
