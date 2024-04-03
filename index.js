@@ -96,6 +96,12 @@ const studentDataSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      designation: {
+        type: String,
+      },
+      Company: {
+        type: String,
+      },
       otherCourse: {
         type: String,
       },
@@ -145,9 +151,9 @@ app.get("/studentsData", async (req, res) => {
     res.status(500).send("Error retrieving student data");
   }
 });
-app.post("/upload", upload.single("files"), function (req, res) {
+app.post("/upload", upload.array("file"), function (req, res) {
   console.log(req.body);
-  // console.log(req.file);
+  console.log(req.files);
   res.json("Files uploaded successfully!");
 });
 
