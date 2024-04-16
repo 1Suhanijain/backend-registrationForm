@@ -3,6 +3,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import multer from "multer";
 import sgMail from "@sendgrid/mail";
+import bcrypt from "bcrypt";
 import "dotenv/config";
 
 const app = express();
@@ -77,7 +78,7 @@ const studentDataSchema = new mongoose.Schema({
   },
   permanentAddress: {
     type: String,
-    // required: true,
+    required: true,
   },
   eduDesignation: {
     type: String,
@@ -85,15 +86,12 @@ const studentDataSchema = new mongoose.Schema({
   },
   qualification: {
     type: String,
-    required: true,
   },
   year: {
     type: String,
-    required: true,
   },
   college: {
     type: String,
-    required: true,
   },
   coursedetail: {
     type: String,
@@ -121,9 +119,22 @@ const studentDataSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required : true
+    required: true,
+  },
+  hashvalue: {
+    type: String,
   },
 });
+// const studentRegisterSchema = new mongoose.Schema({
+//   email: {
+//     type: String,
+//     required: true,
+//   },
+//   password: {
+//     type: String,
+//     required: true,
+//   },
+// });
 const StudentsData = mongoose.model(
   "StudentsData",
   studentDataSchema,
@@ -133,38 +144,39 @@ const StudentsData = mongoose.model(
 // console.log(StudentsData);
 
 app.post("/submit", async (req, res) => {
-  const studentData = new StudentsData(req.body);
-  console.log(studentData);
   try {
-    await studentData.save();
-
+    const studentData = new StudentsData(req.body);
     const studentEmail = req.body.email;
-    const password = req.body.password
-    console.log(studentEmail, "137");
-    const msg = {
-      to: studentEmail, // Change to your recipient
-      from: "rohit@fullstacklearning.com", // Change to your verified sender
-      subject: "Sending with SendGrid is Fun",
-      text: `Student registered succesfully `,
-      html: `<strong>and easy to do anywhere, even with Node.js</strong>  here is your one time password ${password}
-      <p><a href="http://localhost:5173/login">Login to your account</a></p>
-      `,
-    };
-    sgMail
-      .send(msg)
-      .then(() => {
-        console.log("Email sent");
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    const password = req.body.password;
 
+    const saltRounds = 10;
+
+    const hash = await bcrypt.hash(password, saltRounds);
+    studentData.hashvalue = hash;
+
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    const msg = {
+      to: studentEmail,
+      from: "rohit@fullstacklearning.com",
+      subject: "Student registered successfully",
+      text: "and easy to do anywhere, even with Node.js",
+      html: `<strong>and easy to do anywhere, even with Node.js</strong> here is your one time password <b>${password}</b>
+      <p><a href='http://localhost:5173/login/?hash=${hash}&email=${studentEmail}'>Login</a></p>`,
+    };
+
+    await sgMail.send(msg);
+
+    await studentData.save();
+    console.log(studentData, "170");
+    console.log("Email sent and data saved successfully");
     res.send(studentData);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).send("Error submitting data");
   }
 });
-///
+
+///get api all studentsdata
 app.get("/studentsData", async (req, res) => {
   try {
     const students = await StudentsData.find();
@@ -174,6 +186,7 @@ app.get("/studentsData", async (req, res) => {
     res.status(500).send("Error retrieving student data");
   }
 });
+//upload api
 app.post("/upload", upload.array("file"), function (req, res) {
   const filePath = [];
   console.log(req.body);
@@ -188,5 +201,55 @@ app.post("/upload", upload.array("file"), function (req, res) {
     .status(200)
     .json({ "file uploaded successfully": true, filePath: req.files });
 });
-
-///
+// userlogin
+app.post("/studentLogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const student = await StudentsData.findOne({ email: email });
+    console.log(student, req.body, "login");
+    if (!student && student.password !== password) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    return res.status(200).json({ message: "user logged in succesfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+//reset password
+app.post("/resetPassword", async (req, res) => {
+  try {
+    const { oldPassword, newPassword, email } = req.body;
+    const UpdatedStudent = await StudentsData.findOneAndUpdate(
+      { email: email },
+      { password: newPassword },
+      { new: true }
+    );
+    console.log(UpdatedStudent, "228");
+    if (!UpdatedStudent) {
+      return res
+        .status(404)
+        .json({ message: "Student not found", statusCode: 404 });
+    }
+    return res
+      .status(200)
+      .json({ message: "Password updated successfully", statusCode: 200 });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+// to check hashvalue
+app.get("/getHashValue", async (req, res) => {
+  try {
+    const email = req.query.email; // Get email from query parameters
+    const student = await StudentsData.findOne({ email: email }); // Find student by email
+    if (!student) {
+      return res.status(404).send("Student not found");
+    }
+    res.send(student);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error retrieving student data");
+  }
+});
