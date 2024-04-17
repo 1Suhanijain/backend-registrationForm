@@ -216,6 +216,7 @@ app.post("/studentLogin", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+/////
 //reset password
 app.post("/resetPassword", async (req, res) => {
   try {
