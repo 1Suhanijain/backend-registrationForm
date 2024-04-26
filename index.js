@@ -3,20 +3,21 @@ import cors from "cors";
 import mongoose from "mongoose";
 import multer from "multer";
 import sgMail from "@sendgrid/mail";
-import bcrypt from "bcrypt";
+import StudentRouter from "./StudentRouter.js";
 import "dotenv/config";
 
 const app = express();
 console.log(process.env.SENDGRID_API_KEY);
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "http://localhost:5173",
   })
 );
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/student", StudentRouter);
+
 const port = 8080;
 
 mongoose
@@ -106,10 +107,6 @@ const studentDataSchema = new mongoose.Schema({
   otherCourse: {
     type: String,
   },
-  eduDesignation: {
-    type: String,
-    required: true,
-  },
   analytics: {
     type: String,
     required: true,
@@ -125,56 +122,12 @@ const studentDataSchema = new mongoose.Schema({
     type: String,
   },
 });
-// const studentRegisterSchema = new mongoose.Schema({
-//   email: {
-//     type: String,
-//     required: true,
-//   },
-//   password: {
-//     type: String,
-//     required: true,
-//   },
-// });
-const StudentsData = mongoose.model(
+
+export const StudentsData = mongoose.model(
   "StudentsData",
   studentDataSchema,
   "students"
 );
-
-// console.log(StudentsData);
-
-app.post("/submit", async (req, res) => {
-  try {
-    const studentData = new StudentsData(req.body);
-    const studentEmail = req.body.email;
-    const password = req.body.password;
-
-    const saltRounds = 10;
-
-    const hash = await bcrypt.hash(password, saltRounds);
-    studentData.hashvalue = hash;
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
-      to: studentEmail,
-      from: "rohit@fullstacklearning.com",
-      subject: "Student registered successfully",
-      text: "and easy to do anywhere, even with Node.js",
-      html: `<strong>and easy to do anywhere, even with Node.js</strong> here is your one time password <b>${password}</b>
-      <p><a href='http://localhost:5173/login/?hash=${hash}&email=${studentEmail}'>Login</a></p>`,
-    };
-
-    await sgMail.send(msg);
-
-    await studentData.save();
-    console.log(studentData, "170");
-    console.log("Email sent and data saved successfully");
-    res.send(studentData);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Error submitting data");
-  }
-});
 
 ///get api all studentsdata
 app.get("/studentsData", async (req, res) => {
@@ -201,56 +154,5 @@ app.post("/upload", upload.array("file"), function (req, res) {
     .status(200)
     .json({ "file uploaded successfully": true, filePath: req.files });
 });
-// userlogin
-app.post("/studentLogin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const student = await StudentsData.findOne({ email: email });
-    console.log(student, req.body, "login");
-    if (!student && student.password !== password) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-    return res.status(200).json({ message: "user logged in succesfully" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-/////
-//reset password
-app.post("/resetPassword", async (req, res) => {
-  try {
-    const { oldPassword, newPassword, email } = req.body;
-    const UpdatedStudent = await StudentsData.findOneAndUpdate(
-      { email: email },
-      { password: newPassword },
-      { new: true }
-    );
-    console.log(UpdatedStudent, "228");
-    if (!UpdatedStudent) {
-      return res
-        .status(404)
-        .json({ message: "Student not found", statusCode: 404 });
-    }
-    return res
-      .status(200)
-      .json({ message: "Password updated successfully", statusCode: 200 });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
-// to check hashvalue
-app.get("/getHashValue", async (req, res) => {
-  try {
-    const email = req.query.email; // Get email from query parameters
-    const student = await StudentsData.findOne({ email: email }); // Find student by email
-    if (!student) {
-      return res.status(404).send("Student not found");
-    }
-    res.send(student);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Error retrieving student data");
-  }
-});
+
+
