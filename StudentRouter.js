@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import sgMail from "@sendgrid/mail";
 import { StudentsData } from "./index.js";
+import jwt from "jsonwebtoken";
 
 const Studentrouter = express.Router();
 
@@ -42,10 +43,19 @@ Studentrouter.post("/studentLogin", async (req, res) => {
   try {
     const { email, password } = req.body;
     const student = await StudentsData.findOne({ email: email });
+
     if (!student || student.password !== password) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
-    return res.status(200).json({ message: "User logged in successfully" });
+
+    const token = jwt.sign(
+      { email: student.email, userId: student._id },
+      { expiresIn: "1h" }
+    );
+
+    return res
+      .status(200)
+      .json({ message: "User logged in successfully", token: token });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
