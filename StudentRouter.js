@@ -39,12 +39,18 @@ Studentrouter.post("/submit", async (req, res) => {
 });
 
 // studentlogin
+
 Studentrouter.post("/studentLogin", async (req, res) => {
   try {
     const { email, password } = req.body;
     const student = await StudentsData.findOne({ email: email });
 
-    if (!student || student.password !== password) {
+    if (!student) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, student.password);
+    if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
@@ -61,6 +67,7 @@ Studentrouter.post("/studentLogin", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 /////
 //reset password
 Studentrouter.post("/resetPassword", async (req, res) => {
@@ -70,7 +77,7 @@ Studentrouter.post("/resetPassword", async (req, res) => {
       { email: email },
       { password: newPassword },
       { new: true }
-    );
+    ); 
     console.log(UpdatedStudent, "228");
     if (!UpdatedStudent) {
       return res

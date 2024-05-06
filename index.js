@@ -21,7 +21,9 @@ app.use("/student", StudentRouter);
 const port = 8080;
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/fsl")
+  .connect(
+    "mongodb+srv://mongodbuser:zFMYcFgVV4SS7jA6@cluster0.4ont6qs.mongodb.net/fsl?retryWrites=true&w=majority"
+  )
   .then(() => {
     console.log("connected to mongodb");
     app.listen(port, () => {
@@ -154,5 +156,3 @@ app.post("/upload", upload.array("file"), function (req, res) {
     .status(200)
     .json({ "file uploaded successfully": true, filePath: req.files });
 });
-
-
